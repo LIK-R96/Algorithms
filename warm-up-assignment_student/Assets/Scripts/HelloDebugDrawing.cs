@@ -6,7 +6,7 @@ public class HelloDebugDrawing : MonoBehaviour
     {
         
         RectInt a = new RectInt(0, 0, 10, 10);
-        RectInt b = new RectInt(5, 5, 10, 10);
+        RectInt b = new RectInt(9, 0, 10, 10);
         RectInt c = AlgorithmsUtils.Intersect(a, b);
         
         DebugDrawingBatcher.BatchCall(() =>

@@ -14,20 +14,20 @@ public class Drawer : MonoBehaviour
     public int totalRoomCount;
     public RectInt minRoomSize;
     public RectInt maxRoomSize;
-    private bool horizontalCut;
-    private bool verticalCut;
+   [SerializeField]private bool horizontalCut;
+   [SerializeField]private bool verticalCut;
     void Start()
     {
         roomList = new List<RectInt>();
         rectangleMain = new RectInt(0, 0, baseParam[0], baseParam[1]);
-        //AlgorithmsUtils.DebugRectInt(rectangleMain, Color.blue, float.MaxValue);
+        AlgorithmsUtils.DebugRectInt(rectangleMain, Color.blue, float.MaxValue);
 
     }
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && !horizontalCut)
+        if (Input.GetKeyDown(KeyCode.Space) && !horizontalCut && !verticalCut)
         {
-            RectInt roomA = new RectInt(0, 0, rectangleMain.width, rectangleMain.height / 2 + 1);
+            RectInt roomA = new RectInt(0, 0, rectangleMain.width, rectangleMain.height / 2);
             roomList.Add(roomA);
             RectInt roomB = new RectInt(0, rectangleMain.height, rectangleMain.width, -rectangleMain.height / 2 - 1);
             roomList.Add(roomB);
@@ -36,13 +36,16 @@ public class Drawer : MonoBehaviour
             verticalCut = true;
             StartCoroutine(CuttingAdditionalRooms());
         }
-        else if (Input.GetKeyDown(KeyCode.F) && !verticalCut)
+        else if (Input.GetKeyDown(KeyCode.F) && !verticalCut && !horizontalCut)
         {
             RectInt roomA = new RectInt(0, 0, rectangleMain.width / 2 + 1, rectangleMain.height);
+            roomList.Add(roomA);
             RectInt roomB = new RectInt(rectangleMain.width, 0, -rectangleMain.width / 2 - 1, rectangleMain.height);
+            roomList.Add(roomB);
             AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, float.MaxValue);
             AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, float.MaxValue);
             horizontalCut = true;
+            StartCoroutine(CuttingAdditionalRooms());
         }
         foreach (var room in roomList)
         {
@@ -57,23 +60,26 @@ public class Drawer : MonoBehaviour
         {
             if (verticalCut)
             {
-                RectInt newRoomA = new RectInt(room.x, room.y, room.width / 2 - 1, room.height);
+                RectInt newRoomA = new RectInt(room.x, room.y, room.width / 2, room.height);
                 tempList.Add(newRoomA);
-                RectInt newRoomB = new RectInt(-room.x, room.y, room.width / 2 + 1, room.height);
+                RectInt newRoomB = new RectInt(-room.x, room.y, room.width / 2 - 1, room.height);
                 tempList.Add(newRoomA);
                 RectInt roomC = AlgorithmsUtils.Intersect(newRoomA, newRoomB);
                 AlgorithmsUtils.DebugRectInt(newRoomA, Color.yellow, float.MaxValue);
                 AlgorithmsUtils.DebugRectInt(newRoomB, Color.yellow, float.MaxValue);
+                
 
             }
             else if (horizontalCut)
             {
-                RectInt newRoomA = new RectInt(room.x, room.y, room.width, room.height / 2 + 1);
+                RectInt newRoomA = new RectInt(room.x, room.y, room.width, room.height / 2);
                 RectInt newRoomB = new RectInt(room.x, -room.y, room.width, room.height / 2 - 1);
                 AlgorithmsUtils.DebugRectInt(newRoomA, Color.yellow, float.MaxValue);
                 AlgorithmsUtils.DebugRectInt(newRoomB, Color.yellow, float.MaxValue);
+
             }
         }
+        roomList.Clear();
         roomList = tempList;
         yield return null;
     }
