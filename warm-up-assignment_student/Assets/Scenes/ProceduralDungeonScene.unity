@@ -487,16 +487,7 @@ MonoBehaviour:
   roomCount: 1
   roomList: []
   totalRoomCount: 0
-  minRoomSize:
-    x: 0
-    y: 0
-    width: 0
-    height: 0
-  maxRoomSize:
-    x: 0
-    y: 0
-    width: 0
-    height: 0
+  minRoomSize: 5
   horizontalCut: 0
   verticalCut: 0
 --- !u!1660057539 &9223372036854775807
