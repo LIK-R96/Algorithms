@@ -97,18 +97,19 @@ public class Drawer : MonoBehaviour
     //}
     public IEnumerator CutRooms()
     {
-       
+
 
         while (roomQueue.Count > 0)
         {
             RectInt currentRoom = roomQueue.Dequeue(); // Remove first room from queue
 
+            // Use currentRoom instead of roomList[0] to determine the splitting range
             int randomX = Random.Range(minRoomSize, currentRoom.width);
 
             // Ensure the split is valid
-            if (randomX >= minRoomSize)
+            if (randomX >= minRoomSize && (currentRoom.width - randomX) >= minRoomSize)
             {
-                RectInt roomA = new RectInt(currentRoom.x, currentRoom.y, randomX, currentRoom.height);
+                RectInt roomA = new RectInt(currentRoom.x, currentRoom.y, randomX + 1, currentRoom.height);
                 RectInt roomB = new RectInt(currentRoom.x + randomX, currentRoom.y, currentRoom.width - randomX, currentRoom.height);
 
                 // Debug visualization
@@ -119,13 +120,13 @@ public class Drawer : MonoBehaviour
                 roomList.Add(roomA);
                 roomList.Add(roomB);
 
-                // Enqueue new rooms for further splitting
-                roomQueue.Enqueue(roomA);
-                roomQueue.Enqueue(roomB);
+                // Enqueue new rooms ONLY if they meet the minimum size requirement
+                if (roomA.width >= minRoomSize) roomQueue.Enqueue(roomA);
+                if (roomB.width >= minRoomSize) roomQueue.Enqueue(roomB);
             }
             else
             {
-                roomQueue.Enqueue(currentRoom);
+                CompleteRooms.Add(currentRoom);
             }
 
             yield return new WaitForSeconds(0.5f); // Delay to visualize changes
