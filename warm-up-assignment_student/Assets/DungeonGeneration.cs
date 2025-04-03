@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
@@ -11,7 +12,6 @@ public class Drawer : MonoBehaviour
     public int roomCount = 1;
     RectInt rectangleMain;
     //make a list of the total rooms, that are unsplit
-    public List<RectInt> roomList;
     private bool initalCut;
     public int totalRoomCount;
     //get a minimal room size
@@ -21,13 +21,13 @@ public class Drawer : MonoBehaviour
     [SerializeField]private bool horizontalCut;
    [SerializeField]private bool verticalCut;
     //make a list so that rooms dont repeat after they split once.
-    private List<RectInt> CompleteRooms = new();
+    public List<RectInt> CompleteRooms = new();
     void Start()
     {
-        roomList = new List<RectInt>();
+        CompleteRooms = new List<RectInt>();
         rectangleMain = new RectInt(0, 0, baseParam[0], baseParam[1]);
         AlgorithmsUtils.DebugRectInt(rectangleMain, Color.red, float.MaxValue);
-        roomList.Add(rectangleMain);
+        CompleteRooms.Add(rectangleMain);
         // Enqueue only the initial room, instead of using roomList reference
         roomQueue.Enqueue(rectangleMain);
 
@@ -57,7 +57,8 @@ public class Drawer : MonoBehaviour
         //    StartCoroutine(CuttingAdditionalRooms());
         //}
         StartCoroutine(CutRooms());
-        foreach (var room in roomList)
+       // StartCoroutine(SplitHorizontally());
+        foreach (var room in CompleteRooms)
         {
             AlgorithmsUtils.DebugRectInt(room, Color.yellow);
         }
@@ -97,43 +98,105 @@ public class Drawer : MonoBehaviour
     //}
     public IEnumerator CutRooms()
     {
-
-
         while (roomQueue.Count > 0)
         {
             RectInt currentRoom = roomQueue.Dequeue(); // Remove first room from queue
 
-            // Use currentRoom instead of roomList[0] to determine the splitting range
-            int randomX = Random.Range(minRoomSize, currentRoom.width);
+            // Check if room is too small to split further
+            bool canSplitVertically = currentRoom.width >= 2 * minRoomSize;
+            bool canSplitHorizontally = currentRoom.height >= 2 * minRoomSize;
 
-            // Ensure the split is valid
-            if (randomX >= minRoomSize && (currentRoom.width - randomX) >= minRoomSize)
+            if (!canSplitVertically && !canSplitHorizontally)
             {
-                RectInt roomA = new RectInt(currentRoom.x, currentRoom.y, randomX + 1, currentRoom.height);
+                CompleteRooms.Add(currentRoom); // Store completed rooms
+                continue;
+            }
+
+            bool splitHorizontally;
+
+            if (canSplitVertically && canSplitHorizontally)
+            {
+                // Randomly choose split direction if both are possible
+                splitHorizontally = Random.value > 0.5f;
+            }
+            else
+            {
+                // Force split in the only possible direction
+                splitHorizontally = canSplitHorizontally;
+            }
+
+            if (splitHorizontally)
+            {
+                // Horizontal Split (splitting by height)
+                int randomY = Random.Range(minRoomSize, currentRoom.height - minRoomSize);
+
+                RectInt roomA = new RectInt(currentRoom.x, currentRoom.y, currentRoom.width, randomY + 1); // Overlap by 1
+                RectInt roomB = new RectInt(currentRoom.x, currentRoom.y + randomY, currentRoom.width, currentRoom.height - randomY);
+
+                // Debug visualization
+                AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, float.MaxValue);
+                AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, float.MaxValue);
+
+                if (roomA.height >= minRoomSize) roomQueue.Enqueue(roomA);
+                else CompleteRooms.Add(roomA);
+
+                if (roomB.height >= minRoomSize) roomQueue.Enqueue(roomB);
+                else CompleteRooms.Add(roomB);
+            }
+            else
+            {
+                // Vertical Split (splitting by width)
+                int randomX = Random.Range(minRoomSize, currentRoom.width - minRoomSize);
+
+                RectInt roomA = new RectInt(currentRoom.x, currentRoom.y, randomX + 1, currentRoom.height); // Overlap by 1
                 RectInt roomB = new RectInt(currentRoom.x + randomX, currentRoom.y, currentRoom.width - randomX, currentRoom.height);
 
                 // Debug visualization
                 AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, float.MaxValue);
                 AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, float.MaxValue);
 
-                // Add rooms to list (tracking all rooms)
-                roomList.Add(roomA);
-                roomList.Add(roomB);
-
-                // Enqueue new rooms ONLY if they meet the minimum size requirement
                 if (roomA.width >= minRoomSize) roomQueue.Enqueue(roomA);
+                else CompleteRooms.Add(roomA);
+
                 if (roomB.width >= minRoomSize) roomQueue.Enqueue(roomB);
-            }
-            else
-            {
-                CompleteRooms.Add(currentRoom);
+                else CompleteRooms.Add(roomB);
             }
 
             yield return new WaitForSeconds(0.5f); // Delay to visualize changes
         }
 
-        Debug.Log($"Total Rooms Generated: {CompleteRooms.Count}");
-        Debug.Log($": {roomQueue.Count}");
 
     }
+    //IEnumerator SplitHorizontally()
+    //{
+    //    while (roomQueue.Count > 0)
+    //    {
+    //        RectInt currentRoom = roomQueue.Dequeue(); // Remove first room from queue
+    //        int randomY = Random.Range(minRoomSize, currentRoom.height);
+
+    //        if (randomY >= minRoomSize && (currentRoom.height - randomY) >= minRoomSize)
+    //        {
+    //            RectInt roomA = new RectInt(currentRoom.x, currentRoom.y, currentRoom.width, randomY);
+    //            RectInt roomB = new RectInt(currentRoom.x, currentRoom.y + randomY, currentRoom.width, currentRoom.height - randomY);
+
+    //            // Debug visualization
+    //            AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, float.MaxValue);
+    //            AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, float.MaxValue);
+
+    //            // Add rooms to list
+    //            roomList.Add(roomA);
+    //            roomList.Add(roomB);
+
+    //            // Enqueue only if they meet min size
+    //            if (roomA.height >= minRoomSize) roomQueue.Enqueue(roomA);
+    //            if (roomB.height >= minRoomSize) roomQueue.Enqueue(roomB);
+    //        }
+    //        else
+    //        {
+    //            CompleteRooms.Add(currentRoom);
+    //        }
+
+    //        yield return new WaitForSeconds(0.5f); // Delay to visualize changes
+    //    }
+    //}
 }
